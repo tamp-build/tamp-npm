@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <RootNamespace>Tamp.Npm.V10</RootNamespace>
+    <AssemblyName>Tamp.Npm.V10</AssemblyName>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Package">
+    <PackageId>Tamp.Npm.V10</PackageId>
+    <Description>npm CLI wrapper for the Node 22+ / npm 10+ era. Verb surface mirrors Tamp.Yarn.V4: Install, Ci, Run, Publish, Audit, Raw escape hatch. Auth via NPM_TOKEN env or .npmrc; PAT-typed token via Secret. Companion to Tamp.Yarn.V4 / Tamp.Turbo.V2 / Tamp.Vite.V5 for the JavaScript build chain. Handles the Windows npm.cmd shim invocation path.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(TampCorePath)" Condition="'$(TampCoreMode)' == 'project'" />
+    <PackageReference Include="Tamp.Core" Condition="'$(TampCoreMode)' == 'package'" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+  </ItemGroup>
+
+</Project>
