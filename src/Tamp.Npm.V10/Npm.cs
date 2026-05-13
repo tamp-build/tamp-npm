@@ -29,6 +29,24 @@ public static class Npm
     public static CommandPlan Audit(Tool tool, Action<NpmAuditSettings>? configure = null)
         => Build<NpmAuditSettings>(tool, configure);
 
+    /// <summary>
+    /// Idempotent <c>npm version &lt;ver&gt; --no-git-tag-version --allow-same-version</c>.
+    /// Use from a <c>StampVersion</c> target. Safe to invoke repeatedly with the same
+    /// version — no-op succeeds (raw <c>npm version</c> exits 1 on no-op which breaks
+    /// retry loops).
+    /// </summary>
+    public static CommandPlan SetVersion(Tool tool, string version)
+    {
+        if (tool is null) throw new ArgumentNullException(nameof(tool));
+        if (string.IsNullOrWhiteSpace(version))
+            throw new ArgumentException("Version must be non-empty.", nameof(version));
+        var s = new NpmSetVersionSettings { Version = version };
+        return s.ToCommandPlan(tool);
+    }
+
+    /// <summary>Object-init overload for <see cref="SetVersion(Tool, string)"/>.</summary>
+    public static CommandPlan SetVersion(Tool tool, NpmSetVersionSettings settings) => Plan(tool, settings);
+
     /// <summary>Raw escape hatch for verbs we haven't typed yet.</summary>
     public static CommandPlan Raw(Tool tool, params string[] arguments)
     {

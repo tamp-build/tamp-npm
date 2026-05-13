@@ -182,4 +182,68 @@ public sealed class NpmTests
         var plan = Npm.Install(FakeTool());
         Assert.EndsWith("npm", plan.Executable.TrimEnd(System.IO.Path.DirectorySeparatorChar));
     }
+
+    // ---- SetVersion (TAM-208 / DasBook friction #12) ----
+
+    [Fact]
+    public void SetVersion_Emits_Version_With_Idempotent_Flags()
+    {
+        var plan = Npm.SetVersion(FakeTool(), "1.0.7");
+        Assert.Equal(new[] { "version", "1.0.7", "--no-git-tag-version", "--allow-same-version" },
+            plan.Arguments);
+    }
+
+    [Theory]
+    [InlineData("1.0.0")]
+    [InlineData("2.0.0-beta.1")]
+    [InlineData("0.0.0-rc.42+abcd1234")]
+    public void SetVersion_Accepts_SemVer_Strings(string version)
+    {
+        var plan = Npm.SetVersion(FakeTool(), version);
+        Assert.Equal(version, plan.Arguments[IndexOf(plan.Arguments, "version") + 1]);
+    }
+
+    [Fact]
+    public void SetVersion_Always_Includes_AllowSameVersion_For_Idempotency()
+    {
+        var plan = Npm.SetVersion(FakeTool(), "1.0.0");
+        Assert.Contains("--allow-same-version", plan.Arguments);
+    }
+
+    [Fact]
+    public void SetVersion_Always_Includes_NoGitTagVersion()
+    {
+        var plan = Npm.SetVersion(FakeTool(), "1.0.0");
+        Assert.Contains("--no-git-tag-version", plan.Arguments);
+    }
+
+    [Fact]
+    public void SetVersion_Throws_On_Null_Tool()
+    {
+        Assert.Throws<ArgumentNullException>(() => Npm.SetVersion(null!, "1.0.0"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void SetVersion_Throws_On_Empty_Version(string? version)
+    {
+        Assert.Throws<ArgumentException>(() => Npm.SetVersion(FakeTool(), version!));
+    }
+
+    [Fact]
+    public void SetVersion_ObjectInit_Overload_Works()
+    {
+        var settings = new NpmSetVersionSettings { Version = "1.0.7" };
+        var plan = Npm.SetVersion(FakeTool(), settings);
+        Assert.Contains("1.0.7", plan.Arguments);
+    }
+
+    [Fact]
+    public void SetVersionSettings_Throws_At_PlanTime_When_Version_Missing()
+    {
+        var s = new NpmSetVersionSettings();   // no Version set
+        Assert.Throws<InvalidOperationException>(() => Npm.SetVersion(FakeTool(), s));
+    }
 }

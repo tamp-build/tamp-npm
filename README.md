@@ -53,7 +53,24 @@ class Build : TampBuild
 | `Npm.Run(...)` | `npm run <script> [-- args...]` | Forwards extra args after `--`. |
 | `Npm.Publish(...)` | `npm publish` | `Otp` is `Secret`-typed and redacted from logs. |
 | `Npm.Audit(...)` | `npm audit [fix]` | Gating-friendly; supports `--audit-level` for CI threshold checks. |
+| `Npm.SetVersion(...)` | `npm version <ver> --no-git-tag-version --allow-same-version` | **Idempotent** (0.2.0+). Stamp `package.json` from a `StampVersion` target. Safe to call repeatedly with the same version — no-op succeeds (raw `npm version` exits 1 on no-op). |
 | `Npm.Raw(...)` | `npm <anything>` | Escape hatch — file a ticket if you reach for it often. |
+
+### `Npm.SetVersion` worked example
+
+```csharp
+Target StampVersion => _ => _
+    .Before(nameof(BuildFrontend))    // stamp before anything reads the version
+    .Description("[Pack] Sync version across every manifest the build embeds")
+    .Executes(() =>
+    {
+        Cargo.SetPackageVersion(ServiceCrate / "Cargo.toml", Version);
+        Msix.SetAppxManifestVersion(AppxManifest, Version);
+        Npm.SetVersion(NpmBin, Version);
+    });
+```
+
+Why `Npm.SetVersion` exists as a typed verb instead of `Npm.Raw(NpmBin, "version", Version)`: raw `npm version` exits **1** when `package.json` is already at the target version, which kills CI retry loops and "rebuild after small change" inner loops. `SetVersion` always passes `--allow-same-version` so no-op succeeds, and `--no-git-tag-version` to keep npm from mid-build commit-tagging.
 
 ## Auth — private registries
 

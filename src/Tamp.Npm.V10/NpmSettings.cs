@@ -189,3 +189,40 @@ public sealed class NpmRawSettings : NpmSettingsBase
     public void AddArgs(IEnumerable<string> args) => _args.AddRange(args);
     protected override IEnumerable<string> BuildArguments() => _args;
 }
+
+/// <summary>
+/// Settings for <c>npm version &lt;ver&gt; --no-git-tag-version --allow-same-version</c>.
+/// Filed under TAM-208 (DasBook canary friction #12).
+/// </summary>
+/// <remarks>
+/// Raw <c>npm version 1.0.7</c> exits 1 when <c>package.json</c> is already
+/// at 1.0.7 — non-idempotent. Lethal for CI retry patterns and rebuild-after-
+/// small-change inner loops. <c>--allow-same-version</c> (npm 6+) explicitly
+/// tells npm "no-op is fine, exit 0," and <c>--no-git-tag-version</c> stops
+/// npm from creating a git commit + tag (build scripts manage version
+/// stamping outside the SCM layer).
+///
+/// Both flags are non-optional in this verb — the whole point of the typed
+/// verb is to make idempotent version stamping the default. Adopters who
+/// need different semantics (e.g. git tag creation as a side effect) should
+/// use <see cref="Npm.Raw"/> with explicit flags.
+/// </remarks>
+public sealed class NpmSetVersionSettings : NpmSettingsBase
+{
+    /// <summary>Target version (e.g. <c>"1.0.7"</c>). Required.</summary>
+    public string? Version { get; set; }
+
+    public NpmSetVersionSettings SetVersion(string version) { Version = version; return this; }
+
+    protected override IEnumerable<string> BuildArguments()
+    {
+        if (string.IsNullOrWhiteSpace(Version))
+            throw new InvalidOperationException(
+                "Npm.SetVersion requires a non-empty Version. Pass via .SetVersion(\"1.0.7\") or Npm.SetVersion(tool, \"1.0.7\").");
+
+        yield return "version";
+        yield return Version!;
+        yield return "--no-git-tag-version";
+        yield return "--allow-same-version";
+    }
+}
